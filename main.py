@@ -13,7 +13,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.utils import platform
 
-# Import plugin giao diện cài đặt (ChatInfoScreen)
+## Import plugin giao diện cài đặt (ChatInfoScreen)
 from plugin.chat_info import ChatInfoScreen
 
 # Class để cho phép nhấn vào khu vực Avatar + Tên
