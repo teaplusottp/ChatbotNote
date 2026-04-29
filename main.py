@@ -1,14 +1,22 @@
+import ast
+
+if not hasattr(ast, "Str"):
+    ast.Str = ast.Constant
+if not hasattr(ast.Constant, "s"):
+    ast.Constant.s = property(lambda self: self.value)
+
 from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
-from kivymd.uix.button import MDRectangleFlatButton
+from kivymd.uix.button import MDButton, MDButtonText
 from kivy.properties import StringProperty, ListProperty
 from kivy.clock import Clock
 from kivy.utils import get_color_from_hex
-from kivymd.uix.pickers import MDColorPicker
-from kivymd.uix.dialog import MDDialog
+from kivy.uix.colorpicker import ColorPicker
+from kivymd.uix.dialog import MDDialog, MDDialogButtonContainer, MDDialogContentContainer, MDDialogHeadlineText
+from kivy.uix.widget import Widget
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.utils import platform
@@ -85,28 +93,55 @@ class ChattopApp(MDApp):
         grid = MDGridLayout(cols=2, spacing="12dp", size_hint_y=None, height="420dp", padding="0dp")
         
         # Thêm lựa chọn mở Gallery ở đầu list
-        gallery_btn = MDRectangleFlatButton(
-            text="[Mở Thư Viện Ảnh]", size_hint_y=None, height="60dp",
+        gallery_btn = MDButton(
+            size_hint_y=None, height="60dp",
+            style="outlined",
             line_color=get_color_from_hex("#000000"), line_width="2dp",
-            text_color=get_color_from_hex("#000000"), theme_text_color="Custom"
         )
+        gallery_btn.add_widget(MDButtonText(
+            text="[Mở Thư Viện Ảnh]",
+            theme_text_color="Custom",
+            text_color=get_color_from_hex("#000000"),
+            halign="center",
+            valign="middle",
+        ))
         gallery_btn.bind(on_release=lambda x: [self.open_gallery_for_avatar(), dialog.dismiss()])
         grid.add_widget(gallery_btn)
 
         for char_name, char_data in self.characters.items():
-            char_button = MDRectangleFlatButton(
-                text=char_name, size_hint_y=None, height="60dp",
-                line_color=get_color_from_hex(char_data["color"]), line_width="2dp",
-                text_color=get_color_from_hex(char_data["color"]), theme_text_color="Custom"
+            line_color = get_color_from_hex(char_data["color"])
+            char_button = MDButton(
+                size_hint_y=None, height="60dp",
+                style="outlined",
+                line_color=line_color, line_width="2dp",
             )
+            char_button.add_widget(MDButtonText(
+                text=char_name,
+                theme_text_color="Custom",
+                text_color=line_color,
+                halign="center",
+                valign="middle",
+            ))
             char_button.bind(on_release=lambda btn, name=char_name, data=char_data: self.select_character(name, data, dialog))
             grid.add_widget(char_button)
         
         dialog_content.add_widget(grid)
         
-        # Sửa lỗi con trỏ UnboundLocalError bằng cách định nghĩa dialog trước
-        global dialog
-        dialog = MDDialog(content_cls=dialog_content, size_hint=(0.9, None), height="600dp")
+        dialog = MDDialog(
+            MDDialogHeadlineText(text="Chọn đối tác chat"),
+            MDDialogContentContainer(dialog_content, orientation="vertical"),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(
+                    MDButtonText(text="Đóng"),
+                    style="text",
+                    on_release=lambda x: dialog.dismiss(),
+                ),
+                spacing="8dp",
+            ),
+            size_hint=(0.9, None),
+            height="600dp",
+        )
         dialog.open()
 
     def select_character(self, name, char_data, dialog_instance):
@@ -119,17 +154,29 @@ class ChattopApp(MDApp):
 
     # --- CUSTOM MESSENGER THEME ---
     def open_color_picker(self):
-        color_picker = MDColorPicker(size_hint=(0.45, 0.85))
-        color_picker.bind(on_select_color=self.handle_theme_color, on_release=self.get_selected_color)
-        color_picker.open()
+        from kivy.uix.colorpicker import ColorPicker
+        color_picker = ColorPicker(size_hint=(1, 1))
+        
+        # Khởi tạo dialog trước để lambda có thể tham chiếu
+        self.color_dialog = MDDialog(
+            MDDialogHeadlineText(text="Chọn màu chủ đề"),
+            MDDialogContentContainer(color_picker, orientation="vertical"),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Xong"), style="text", 
+                          on_release=lambda x: self._apply_color(color_picker.color)),
+            ),
+            size_hint=(0.9, 0.8)
+        )
+        self.color_dialog.open()
 
-    def handle_theme_color(self, instance_color_picker, color):
-        pass
-
-    def get_selected_color(self, instance_color_picker, type_color, selected_color):
+    def _apply_color(self, selected_color):
         self.current_accent = selected_color
-        instance_color_picker.dismiss()
+        self.color_dialog.dismiss()
 
+    # --- DỮ LIỆU ---
+    def clear_chat_history(self):
+        self.chat_screen.ids.chat_list.clear_widgets()
     # --- THƯ VIỆN ẢNH (ANDROID FIX) ---
     def open_gallery_for_avatar(self):
         # Yêu cầu quyền trên Android trước khi gọi thư viện
@@ -143,9 +190,17 @@ class ChattopApp(MDApp):
         try:
             from plyer import filechooser
             filechooser.open_file(
-                on_selection=self.handle_avatar_selection, 
-                filters=[("Image Files", "*.png", "*.jpg", "*.jpeg")]
+                on_selection=self.handle_avatar_selection,
+                filters=[("Image Files", "*.png", "*.jpg", "*.jpeg")],
             )
+        except ModuleNotFoundError as e:
+            if "win32com" in str(e).lower() or "pywin32" in str(e).lower():
+                print(
+                    "Lỗi hệ thống khi mở thư viện ảnh: win32com chưa được cài đặt. "
+                    "Hãy cài `pywin32` trong môi trường chat."
+                )
+            else:
+                print(f"Lỗi hệ thống khi mở thư viện ảnh: {e}")
         except Exception as e:
             print(f"Lỗi hệ thống khi mở thư viện ảnh: {e}")
 
@@ -179,5 +234,38 @@ class ChattopApp(MDApp):
     def _scroll_to_bottom(self):
         self.chat_screen.ids.scroll_view.scroll_y = 0
 
+# --- DỮ LIỆU ---
+    def clear_chat_history(self):
+        self.chat_screen.ids.chat_list.clear_widgets()
+
+    def filter_chat(self, keyword):
+        """
+        Lọc tin nhắn theo từ khóa. 
+        Truyền keyword rỗng ("") để hiển thị lại toàn bộ.
+        """
+        keyword = keyword.lower()
+        chat_list = self.chat_screen.ids.chat_list
+        match_count = 0
+
+        for bubble in chat_list.children:
+            # chat_list.children chứa các MessageBubble
+            if hasattr(bubble, 'msg_text'):
+                # Lưu lại chiều cao gốc để sau này khôi phục nếu cần
+                if not hasattr(bubble, 'original_opacity'):
+                    bubble.original_opacity = bubble.opacity
+
+                if keyword == "" or keyword in bubble.msg_text.lower():
+                    # Hiển thị
+                    bubble.opacity = 1
+                    bubble.size_hint_y = None # Khôi phục tự động tính toán
+                    match_count += 1
+                else:
+                    # Ẩn hoàn toàn để không chiếm diện tích cuộn
+                    bubble.opacity = 0
+                    bubble.size_hint_y = None
+                    bubble.height = 0
+
+        return match_count
+        
 if __name__ == "__main__":
     ChattopApp().run()

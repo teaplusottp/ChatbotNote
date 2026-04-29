@@ -1,0 +1,235 @@
+#:import ButtonBehavior kivy.uix.behaviors.ButtonBehavior
+
+# Widget cho phần Avatar & Tên có thể nhấn được
+<AvatarNameButton@ButtonBehavior+MDBoxLayout>:
+    orientation: "vertical"
+    adaptive_height: True
+
+# Widget nút chức năng (Trang cá nhân, Biệt danh...)
+<ChatActionItem@ButtonBehavior+MDBoxLayout>:
+    orientation: "vertical"
+    icon: ""
+    text: ""
+    spacing: "8dp"
+    adaptive_height: True
+    MDIconButton:
+        icon: root.icon
+        theme_text_color: "Custom"
+        text_color: [1, 1, 1, 1]
+        md_bg_color: [0.15, 0.15, 0.15, 1]
+        pos_hint: {"center_x": 0.5}
+        on_release: root.dispatch('on_release')
+    MDLabel:
+        text: root.text
+        halign: "center"
+        theme_text_color: "Custom"
+        text_color: [1, 1, 1, 1]
+        font_size: "13sp"
+
+# Widget dòng cài đặt (Thông báo, Chặn...)
+<ChatInfoListItem@ButtonBehavior+MDBoxLayout>:
+    size_hint_y: None
+    height: "60dp"
+    icon: ""
+    text: ""
+    secondary_text: ""
+    spacing: "16dp"
+    padding: ["16dp", 0]
+    
+    MDIcon:
+        icon: root.icon
+        theme_text_color: "Custom"
+        text_color: [1, 1, 1, 1]
+        size_hint_x: None
+        width: "24dp"
+        pos_hint: {"center_y": 0.5}
+        
+    MDBoxLayout:
+        orientation: "vertical"
+        pos_hint: {"center_y": 0.5}
+        adaptive_height: True
+        MDLabel:
+            text: root.text
+            theme_text_color: "Custom"
+            text_color: [1, 1, 1, 1]
+            font_size: "16sp"
+            adaptive_height: True
+        MDLabel:
+            text: root.secondary_text
+            theme_text_color: "Custom"
+            text_color: [0.6, 0.6, 0.6, 1]
+            font_size: "13sp"
+            adaptive_height: True
+            opacity: 1 if root.secondary_text else 0
+            height: self.texture_size[1] if root.secondary_text else 0
+
+<ChatInfoScreen>:
+    md_bg_color: [0.03, 0.03, 0.03, 1]
+
+    MDBoxLayout:
+        orientation: "vertical"
+
+        # --- TOP BAR ---
+        MDBoxLayout:
+            size_hint_y: None
+            height: "56dp"
+            padding: "8dp"
+            MDIconButton:
+                icon: "arrow-left"
+                theme_text_color: "Custom"
+                text_color: [1, 1, 1, 1]
+                on_release: app.go_back_to_chat()
+            Widget:
+
+        # --- CONTENT ---
+        ScrollView:
+            do_scroll_x: False
+            MDBoxLayout:
+                orientation: "vertical"
+                adaptive_height: True
+                padding: [0, "10dp", 0, "40dp"]
+                spacing: "20dp"
+
+                # Khu vực Avatar & Tên (Bọc trong ButtonBehavior để bấm vào tên là đổi đc biệt danh luôn)
+                AvatarNameButton:
+                    spacing: "15dp"
+                    on_release: root.show_nickname_dialog()
+
+                    MDFloatLayout:
+                        size_hint: None, None
+                        size: "100dp", "100dp"
+                        pos_hint: {"center_x": 0.5}
+                        
+                        # Icon Avatar
+                        MDBoxLayout:
+                            size_hint: None, None
+                            size: "100dp", "100dp"
+                            opacity: 1 if app.is_avatar_image == "icon" else 0
+                            disabled: True if app.is_avatar_image == "image" else False
+                            canvas.before:
+                                Color:
+                                    rgba: app.current_accent
+                                Ellipse:
+                                    pos: self.pos
+                                    size: self.size
+                            MDIcon:
+                                icon: app.current_avatar
+                                font_size: "50dp"
+                                halign: "center"
+                                theme_text_color: "Custom"
+                                text_color: [1, 1, 1, 1]
+
+                        # Custom Photo Avatar
+                        FitImage:
+                            source: app.current_avatar if app.is_avatar_image == "image" else ""
+                            size_hint: None, None
+                            size: "100dp", "100dp"
+                            radius: [50,]
+                            opacity: 1 if app.is_avatar_image == "image" else 0
+                            disabled: True if app.is_avatar_image == "icon" else False
+
+                    MDLabel:
+                        text: app.chat_partner_name
+                        halign: "center"
+                        theme_text_color: "Custom"
+                        text_color: [1, 1, 1, 1]
+                        font_size: "24sp"
+                        bold: True
+                        adaptive_height: True
+
+                # 4 Nút chức năng nhanh
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: "80dp"
+                    padding: ["20dp", 0]
+                    spacing: "10dp"
+                    
+                    ChatActionItem:
+                        icon: "facebook"
+                        text: "Trang cá nhân"
+                    ChatActionItem:
+                        icon: "format-text-variant"
+                        text: "Biệt danh"
+                        on_release: root.show_nickname_dialog()
+                    ChatActionItem:
+                        icon: "magnify"
+                        text: "Tìm kiếm"
+                    ChatActionItem:
+                        icon: "palette"
+                        text: "Tùy chỉnh"
+                        on_release: app.open_color_picker()
+
+                # Danh sách cài đặt chi tiết
+                MDBoxLayout:
+                    orientation: "vertical"
+                    adaptive_height: True
+                    
+                    MDLabel:
+                        text: "   Hành động"
+                        theme_text_color: "Custom"
+                        text_color: [0.6, 0.6, 0.6, 1]
+                        font_size: "14sp"
+                        adaptive_height: True
+                        padding: [0, "10dp"]
+
+                    ChatInfoListItem:
+                        icon: "bell-outline"
+                        text: f"Tắt thông báo về {app.chat_partner_name}"
+                    ChatInfoListItem:
+                        icon: "volume-high"
+                        text: "Thông báo và âm thanh"
+                        secondary_text: "Bật"
+
+                    Widget:
+                        size_hint_y: None
+                        height: "20dp"
+
+# 4 Action Buttons
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: "80dp"
+                    padding: ["20dp", 0]
+                    spacing: "10dp"
+                    
+                    ChatActionItem:
+                        icon: "facebook"
+                        text: "Trang cá nhân"
+                        on_release: root.show_profile_dialog() # Gắn hàm Profile
+                    ChatActionItem:
+                        icon: "format-text-variant"
+                        text: "Biệt danh"
+                        on_release: root.show_nickname_dialog()
+                    ChatActionItem:
+                        icon: "magnify"
+                        text: "Tìm kiếm"
+                        on_release: root.show_search_dialog() # Gắn hàm Tìm kiếm
+                    ChatActionItem:
+                        icon: "palette"
+                        text: "Tùy chỉnh"
+                        on_release: app.open_color_picker()
+
+                # Danh sách cài đặt chi tiết
+                MDBoxLayout:
+                    orientation: "vertical"
+                    adaptive_height: True
+                    
+                    MDLabel:
+                        text: "   Hành động"
+                        theme_text_color: "Custom"
+                        text_color: [0.6, 0.6, 0.6, 1]
+                        font_size: "14sp"
+                        adaptive_height: True
+                        padding: [0, "10dp"]
+
+                    ChatInfoListItem:
+                        icon: "bell-outline"
+                        text: f"Tắt thông báo về {app.chat_partner_name}"
+                        on_release: root.show_toast("Đã tắt thông báo")
+                    ChatInfoListItem:
+                        icon: "volume-high"
+                        text: "Thông báo và âm thanh"
+                        secondary_text: "Bật"
+                    ChatInfoListItem:
+                        icon: "account-group"
+                        text: f"Tạo nhóm chat với {app.chat_partner_name}"
+                        on_release: root.show_create_group_dialog() # Gắn hàm Tạo nhóm

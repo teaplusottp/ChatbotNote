@@ -1,0 +1,10 @@
+kivy==2.3.1
+# Use the latest KivyMD master branch to avoid Python 3.14 compatibility issues
+git+https://github.com/kivymd/KivyMD.git@master
+plyer
+pywin32
+materialyoucolor
+asynckivy<0.7,>=0.6
+materialshapes
+asyncgui
+pycairo

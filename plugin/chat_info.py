@@ -1,248 +1,155 @@
-from kivymd.uix.screen import MDScreen
+import os
 from kivy.lang import Builder
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.dialog import (
+    MDDialog, MDDialogButtonContainer, MDDialogContentContainer, 
+    MDDialogHeadlineText, MDDialogSupportingText
+)
+from kivymd.uix.button import MDButton, MDButtonText
+from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.snackbar import MDSnackbar, MDSnackbarSupportingText
+from kivy.app import App
+from kivy.uix.widget import Widget
 
-# Khởi tạo giao diện trang Cài đặt chung bằng KV string
-Builder.load_string('''
-#:import ButtonBehavior kivy.uix.behaviors.ButtonBehavior
-
-<ChatActionItem@ButtonBehavior+MDBoxLayout>:
-    orientation: "vertical"
-    icon: ""
-    text: ""
-    spacing: "8dp"
-    MDIconButton:
-        icon: root.icon
-        theme_text_color: "Custom"
-        text_color: [1, 1, 1, 1]
-        md_bg_color: [0.15, 0.15, 0.15, 1]
-        pos_hint: {"center_x": 0.5}
-        # Truyền sự kiện click của Icon lên cho class cha
-        on_release: root.dispatch('on_release')
-    MDLabel:
-        text: root.text
-        halign: "center"
-        theme_text_color: "Custom"
-        text_color: [1, 1, 1, 1]
-        font_size: "13sp"
-
-<ChatInfoListItem@MDBoxLayout>:
-    size_hint_y: None
-    height: "60dp"
-    icon: ""
-    text: ""
-    secondary_text: ""
-    spacing: "16dp"
-    
-    MDIcon:
-        icon: root.icon
-        theme_text_color: "Custom"
-        text_color: [1, 1, 1, 1]
-        size_hint_x: None
-        width: "24dp"
-        pos_hint: {"center_y": 0.5}
-        
-    MDBoxLayout:
-        orientation: "vertical"
-        pos_hint: {"center_y": 0.5}
-        adaptive_height: True
-        MDLabel:
-            text: root.text
-            theme_text_color: "Custom"
-            text_color: [1, 1, 1, 1]
-            font_size: "16sp"
-            adaptive_height: True
-        MDLabel:
-            text: root.secondary_text
-            theme_text_color: "Custom"
-            text_color: [0.6, 0.6, 0.6, 1]
-            font_size: "13sp"
-            adaptive_height: True
-            opacity: 1 if root.secondary_text else 0
-            height: self.texture_size[1] if root.secondary_text else 0
-
-<ChatInfoScreen>:
-    md_bg_color: [0.03, 0.03, 0.03, 1] # Dark theme base
-
-    MDBoxLayout:
-        orientation: "vertical"
-
-        # --- TOP BAR ---
-        MDBoxLayout:
-            size_hint_y: None
-            height: "56dp"
-            padding: "8dp"
-            MDIconButton:
-                icon: "arrow-left"
-                theme_text_color: "Custom"
-                text_color: [1, 1, 1, 1]
-                on_release: app.go_back_to_chat()
-            Widget:
-            MDIconButton:
-                icon: "dots-vertical"
-                theme_text_color: "Custom"
-                text_color: [1, 1, 1, 1]
-
-        # --- SCROLLABLE CONTENT ---
-        ScrollView:
-            do_scroll_x: False
-            
-            MDBoxLayout:
-                orientation: "vertical"
-                adaptive_height: True
-                padding: "0dp", "10dp", "0dp", "40dp"
-                spacing: "20dp"
-
-                # Avatar
-                MDFloatLayout:
-                    size_hint_y: None
-                    height: "100dp"
-                    
-                    MDBoxLayout:
-                        size_hint: None, None
-                        size: "100dp", "100dp"
-                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                        canvas.before:
-                            Color:
-                                rgba: app.current_accent
-                            Ellipse:
-                                pos: self.pos
-                                size: self.size
-                        opacity: 1 if app.is_avatar_image == "icon" else 0
-                        
-                    MDIcon:
-                        icon: app.current_avatar if app.is_avatar_image == "icon" else ""
-                        font_size: "50dp"
-                        halign: "center"
-                        theme_text_color: "Custom"
-                        text_color: [1, 1, 1, 1]
-                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                        opacity: 1 if app.is_avatar_image == "icon" else 0
-
-                    FitImage:
-                        source: app.current_avatar if app.is_avatar_image == "image" else ""
-                        size_hint: None, None
-                        size: "100dp", "100dp"
-                        radius: [50,]
-                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                        opacity: 1 if app.is_avatar_image == "image" else 0
-
-                # Name
-                MDLabel:
-                    text: app.chat_partner_name
-                    halign: "center"
-                    theme_text_color: "Custom"
-                    text_color: [1, 1, 1, 1]
-                    font_size: "24sp"
-                    bold: True
-                    size_hint_y: None
-                    height: self.texture_size[1]
-
-                # 4 Action Buttons
-                MDBoxLayout:
-                    size_hint_y: None
-                    height: "80dp"
-                    padding: "20dp", "0dp"
-                    spacing: "15dp"
-                    
-                    ChatActionItem:
-                        icon: "facebook"
-                        text: "Trang cá nhân"
-                    ChatActionItem:
-                        icon: "format-text-variant"
-                        text: "Biệt danh"
-                    ChatActionItem:
-                        icon: "magnify"
-                        text: "Tìm kiếm"
-                    ChatActionItem:
-                        icon: "palette"
-                        text: "Tùy chỉnh"
-                        # Đã xóa "lambda:" ở đây để fix lỗi
-                        on_release: app.open_color_picker()
-
-                # Settings List
-                MDBoxLayout:
-                    orientation: "vertical"
-                    adaptive_height: True
-                    padding: "16dp", "20dp"
-                    
-                    MDLabel:
-                        text: "Hành động"
-                        theme_text_color: "Custom"
-                        text_color: [0.6, 0.6, 0.6, 1]
-                        font_size: "14sp"
-                        size_hint_y: None
-                        height: "40dp"
-                        
-                    ChatInfoListItem:
-                        icon: "bell-outline"
-                        text: f"Tắt thông báo về {app.chat_partner_name}"
-                    ChatInfoListItem:
-                        icon: "volume-high"
-                        text: "Thông báo và âm thanh"
-                        secondary_text: "Bật"
-                    ChatInfoListItem:
-                        icon: "account-group"
-                        text: f"Tạo nhóm chat với {app.chat_partner_name}"
-                    ChatInfoListItem:
-                        icon: "download"
-                        text: "Tự động lưu ảnh"
-                    ChatInfoListItem:
-                        icon: "share-variant"
-                        text: "Chia sẻ thông tin liên hệ"
-
-                    Widget:
-                        size_hint_y: None
-                        height: "20dp"
-
-                    MDLabel:
-                        text: "Quyền riêng tư và hỗ trợ"
-                        theme_text_color: "Custom"
-                        text_color: [0.6, 0.6, 0.6, 1]
-                        font_size: "14sp"
-                        size_hint_y: None
-                        height: "40dp"
-                        
-                    ChatInfoListItem:
-                        icon: "eye-outline"
-                        text: "Thông báo đã đọc"
-                        secondary_text: "Bật"
-                    ChatInfoListItem:
-                        icon: "clock-outline"
-                        text: "Tin nhắn tự hủy"
-                        secondary_text: "Tắt"
-                    ChatInfoListItem:
-                        icon: "lock-outline"
-                        text: "Mã hóa đầu cuối"
-                        secondary_text: "Đoạn chat này được mã hóa đầu cuối"
-                    ChatInfoListItem:
-                        icon: "minus-circle-outline"
-                        text: "Chặn"
-                    ChatInfoListItem:
-                        icon: "cancel"
-                        text: "Hạn chế"
-                    ChatInfoListItem:
-                        icon: "alert-outline"
-                        text: "Báo cáo"
-                        secondary_text: "Góp ý và báo cáo cuộc trò chuyện"
-                    
-                    MDBoxLayout:
-                        size_hint_y: None
-                        height: "60dp"
-                        spacing: "16dp"
-                        MDIcon:
-                            icon: "trash-can-outline"
-                            theme_text_color: "Custom"
-                            text_color: [1, 0.3, 0.3, 1]
-                            size_hint_x: None
-                            width: "24dp"
-                            pos_hint: {"center_y": 0.5}
-                        MDLabel:
-                            text: "Xóa đoạn chat"
-                            theme_text_color: "Custom"
-                            text_color: [1, 0.3, 0.3, 1]
-                            font_size: "16sp"
-                            pos_hint: {"center_y": 0.5}
-''')
+kv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'chat_info.kv')
+Builder.load_file(kv_path)
 
 class ChatInfoScreen(MDScreen):
-    pass
+    nickname_dialog = None
+    clear_dialog = None
+    search_dialog = None
+    profile_dialog = None
+    group_dialog = None
+
+    def show_toast(self, message):
+        MDSnackbar(
+            MDSnackbarSupportingText(text=message),
+            y="24dp", orientation="horizontal", pos_hint={"center_x": 0.5}, size_hint_x=0.9,
+        ).open()
+
+    # --- TÌM KIẾM ---
+    def show_search_dialog(self):
+        self.search_input = MDTextField(
+            MDTextFieldHintText(text="Nhập từ khóa cần tìm..."),
+            mode="outlined",
+        )
+        content = MDBoxLayout(orientation="vertical", adaptive_height=True, padding="10dp")
+        content.add_widget(self.search_input)
+
+        self.search_dialog = MDDialog(
+            MDDialogHeadlineText(text="Tìm kiếm trong chat"),
+            MDDialogContentContainer(content, orientation="vertical"),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Hủy lọc"), style="text", on_release=self.reset_search),
+                MDButton(MDButtonText(text="Tìm"), style="text", on_release=self.execute_search),
+                spacing="8dp",
+            ),
+        )
+        self.search_dialog.open()
+
+    def execute_search(self, *args):
+        keyword = self.search_input.text.strip()
+        if keyword:
+            count = App.get_running_app().filter_chat(keyword)
+            self.show_toast(f"Tìm thấy {count} tin nhắn khớp từ khóa")
+            self.search_dialog.dismiss()
+            App.get_running_app().go_back_to_chat()
+
+    def reset_search(self, *args):
+        App.get_running_app().filter_chat("") # Trả lại toàn bộ tin nhắn
+        self.search_dialog.dismiss()
+        App.get_running_app().go_back_to_chat()
+
+    # --- TRANG CÁ NHÂN ---
+    def show_profile_dialog(self):
+        app = App.get_running_app()
+        self.profile_dialog = MDDialog(
+            MDDialogHeadlineText(text=f"Profile: {app.chat_partner_name}"),
+            MDDialogSupportingText(text="Trạng thái: Đang hoạt động\nTham gia từ: 2026\nSở thích: Hỗ trợ code và fix bug dạo."),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Đóng"), style="text", on_release=lambda x: self.profile_dialog.dismiss()),
+            ),
+        )
+        self.profile_dialog.open()
+
+    # --- TẠO NHÓM ---
+    def show_create_group_dialog(self):
+        app = App.get_running_app()
+        self.group_input = MDTextField(
+            MDTextFieldHintText(text="Tên nhóm mới"),
+            text=f"Nhóm của tôi & {app.chat_partner_name}",
+            mode="outlined",
+        )
+        content = MDBoxLayout(orientation="vertical", adaptive_height=True, padding="10dp")
+        content.add_widget(self.group_input)
+
+        self.group_dialog = MDDialog(
+            MDDialogHeadlineText(text="Tạo nhóm chat mới"),
+            MDDialogContentContainer(content, orientation="vertical"),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Hủy"), style="text", on_release=lambda x: self.group_dialog.dismiss()),
+                MDButton(MDButtonText(text="Tạo"), style="text", on_release=self.execute_create_group),
+                spacing="8dp",
+            ),
+        )
+        self.group_dialog.open()
+
+    def execute_create_group(self, *args):
+        group_name = self.group_input.text.strip()
+        self.group_dialog.dismiss()
+        self.show_toast(f"Đã tạo nhóm: {group_name}")
+
+    # ... (Giữ nguyên các hàm show_nickname_dialog, apply_nickname, show_clear_chat_dialog, confirm_clear cũ của bạn) ...
+
+    def show_nickname_dialog(self):
+        app = App.get_running_app()
+        
+        # Luôn tạo mới nội dung để cập nhật giá trị Tên hiện tại
+        self.nick_input = MDTextField(
+            MDTextFieldHintText(text="Biệt danh"),
+            text=app.chat_partner_name,
+            mode="outlined",
+        )
+        
+        content = MDBoxLayout(orientation="vertical", adaptive_height=True, padding="10dp")
+        content.add_widget(self.nick_input)
+
+        self.nickname_dialog = MDDialog(
+            MDDialogHeadlineText(text="Đặt biệt danh"),
+            MDDialogContentContainer(content, orientation="vertical"),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Hủy"), style="text", on_release=lambda x: self.nickname_dialog.dismiss()),
+                MDButton(MDButtonText(text="Lưu"), style="text", on_release=self.apply_nickname),
+                spacing="8dp",
+            ),
+        )
+        self.nickname_dialog.open()
+
+    def apply_nickname(self, *args):
+        new_name = self.nick_input.text.strip()
+        if new_name:
+            App.get_running_app().chat_partner_name = new_name
+        self.nickname_dialog.dismiss()
+
+    def show_clear_chat_dialog(self):
+        self.clear_dialog = MDDialog(
+            MDDialogHeadlineText(text="Xóa đoạn chat?"),
+            MDDialogSupportingText(text="Hành động này sẽ xóa vĩnh viễn tin nhắn của bạn."),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(MDButtonText(text="Hủy"), style="text", on_release=lambda x: self.clear_dialog.dismiss()),
+                MDButton(MDButtonText(text="Xóa"), style="text", on_release=self.confirm_clear),
+                spacing="8dp",
+            ),
+        )
+        self.clear_dialog.open()
+
+    def confirm_clear(self, *args):
+        App.get_running_app().clear_chat_history()
+        self.clear_dialog.dismiss()
+        App.get_running_app().go_back_to_chat()
